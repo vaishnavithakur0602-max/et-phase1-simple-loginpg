@@ -128,7 +128,7 @@ function MainCanvas() {
   };
 
   return (
-    <main className="relative flex-1 overflow-hidden bg-bg-base">
+    <main className="relative h-full w-full overflow-hidden bg-bg-base">
       <div ref={sceneRef} className="absolute inset-0">
         {hasScene && loadState !== 'error' && (
           <Suspense fallback={<ScanLoader />}>
