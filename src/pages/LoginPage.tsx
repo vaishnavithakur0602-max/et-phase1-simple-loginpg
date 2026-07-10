@@ -53,6 +53,8 @@ function LoginPage() {
       }
     } catch (err: any) {
       const clerkCode = err?.errors?.[0]?.code;
+      const clerkMsg = err?.errors?.[0]?.message ?? '';
+      console.error('[Auth] signIn.create failed:', clerkCode, clerkMsg, err);
 
       if (clerkCode === 'form_identifier_not_found') {
         // No existing account — create one and send the OTP via sign-up instead.
@@ -64,18 +66,18 @@ function LoginPage() {
           setCooldown(30);
         } catch (signUpErr: any) {
           const signUpMsg = signUpErr?.errors?.[0]?.message ?? 'Failed to send code';
+          console.error('[Auth] signUp failed:', signUpErr?.errors?.[0]?.code, signUpMsg);
           if (signUpMsg.toLowerCase().includes('rate')) {
             setError('RATE LIMITED. WAIT BEFORE RETRYING.');
           } else {
-            setError('TRANSMISSION FAILED. VERIFY IDENTIFIER.');
+            setError(`TRANSMISSION FAILED. ${signUpMsg.toUpperCase()}`);
           }
         }
       } else {
-        const errorMessage = err instanceof Error ? err.message : 'Failed to send code';
-        if (errorMessage.toLowerCase().includes('rate')) {
+        if (clerkMsg.toLowerCase().includes('rate')) {
           setError('RATE LIMITED. WAIT BEFORE RETRYING.');
         } else {
-          setError('TRANSMISSION FAILED. VERIFY IDENTIFIER.');
+          setError(`TRANSMISSION FAILED. ${clerkMsg || 'VERIFY IDENTIFIER.'}`);
         }
       }
     } finally {
@@ -112,17 +114,18 @@ function LoginPage() {
           navigate('/dashboard');
         }
       }
-    } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : 'Verification failed';
-      if (errorMessage.toLowerCase().includes('incorrect') || errorMessage.toLowerCase().includes('invalid')) {
+    } catch (err: any) {
+      const clerkMsg = err?.errors?.[0]?.message ?? (err instanceof Error ? err.message : 'Verification failed');
+      console.error('[Auth] verification failed:', err?.errors?.[0]?.code, clerkMsg);
+      if (clerkMsg.toLowerCase().includes('incorrect') || clerkMsg.toLowerCase().includes('invalid')) {
         setError('INVALID CODE. ACCESS DENIED.');
         setCode('');
-      } else if (errorMessage.toLowerCase().includes('expired')) {
+      } else if (clerkMsg.toLowerCase().includes('expired')) {
         setError('CODE EXPIRED. REQUEST NEW CODE.');
         setCode('');
         setStep('email');
       } else {
-        setError('VERIFICATION FAILED.');
+        setError(`VERIFICATION FAILED. ${clerkMsg.toUpperCase()}`);
       }
     } finally {
       setIsLoading(false);
